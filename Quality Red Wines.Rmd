@@ -1,0 +1,814 @@
+---
+title: 'What Makes an Excellent Vinho Verde Red Wine? '
+author: 'By: Leslie Culliton'
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document: default
+---
+
+
+#1. Introduction
+
+The following is an analysis of data from a paper published by Cortez, et.al. in 
+2009^1^. The data consists of 11 attributes of Portugese Vinho Verde Red Wine 
+with a quality score for each wine. A list of the attributes and their effects 
+on a wine can be found in the notes at the end of the analysis.
+
+The analysis explores how the attributes relate to quality score.
+
+```{r, echo = FALSE}
+setwd('C:/Users/Leslie/Documents/Udacity/Term 2/Project 2')
+df = read.csv('wineQualityReds.csv')
+
+library(ggplot2)
+options( warn = -1 )
+```
+
+#2. Summary
+
+Below is a summary of the data.
+
+```{r, echo = FALSE}
+summary(df)
+
+str(df)
+```
+The dataframe consists of 1599 rows and 13 columns. The original dataframe did not have a column name for the wine ID #. It is now added. See below.
+
+```{r, echo = FALSE}
+colnames(df)[which(names(df) == "X")] <- "ID"
+```
+
+```{r, echo = FALSE}
+
+head(df)
+```
+
+#3. Univariate Plots Section
+
+
+```{r, echo = FALSE}
+library(gridExtra)
+
+grid.arrange(ggplot(aes(x = 1, y = fixed.acidity), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = fixed.acidity), data = df) +
+  geom_histogram(binwidth = 1), ncol = 2)
+```
+
+###Plot 3.1
+On the right is a histogram of fixed.acidity. This plot shows the non-volatile acidity of the wines. The pH scale is 1 - 14 with pH 7 being neutral, acids below 7, and bases above 7. 
+
+On the left is a boxplot of the fixed acidity. Points outside of 1.5 * the Interquartile Range (IQR) are considered outliers and are shown on the boxplot in blue. The IQR is the difference in the 3rd and 1st quantiles, which, for fixed acidity, are 9.2 and 7.1, respectively. These values can be found in the above Summary section. The IQR = 2.1. Multiplying IQR by 1.5 gives 3.15. Outliers are values that lie below 7.1 - 3.15 = 3.95 and above 9.2 + 3.15 = 12.35. These values will be removed. 
+
+Statistics for fixed acidity:
+
+```{r, echo = FALSE}
+summary(df$fixed.acidity)
+```
+
+
+```{r, echo = FALSE}
+
+removeOutliers = function(x) { 
+   # Get Q1 and Q3
+   qnt <- quantile(x, probs=c(.25, .75))
+
+   # Get the interquartile range time 1.5
+   iqt <- 1.5 * IQR(x)
+
+   # Apply on a copy of the original data
+   y <- x 
+   y[x < (qnt[1] - iqt)] <- NA
+   y[x > (qnt[2] + iqt)] <- NA
+  
+   # Remove incomplete cases and return the resulted variable
+   y
+}
+df$fixed.acidity <- removeOutliers(df$fixed.acidity)
+```
+
+
+```{r, echo = FALSE}
+library(gridExtra)
+
+grid.arrange(ggplot(aes(x = 1, y = fixed.acidity), data = df) + 
+  geom_boxplot(color = 'green') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = fixed.acidity), data = df) +
+  geom_histogram(binwidth = 1), ncol = 2)
+```
+
+###Plot 3.2
+The plot on the left shows fixed acidity with outliers removed. 
+
+Statistics for fixed acidity after outlier removal:
+
+```{r, echo = FALSE}
+summary(df$fixed.acidity)
+```
+
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = volatile.acidity), data = df) + 
+  geom_boxplot(color = 'black', outlier.color = 'green') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = volatile.acidity), data = df) +
+  geom_histogram(binwidth = .1), ncol = 2)
+```
+
+
+###Plot 3.3
+The above plot shows the volatile acidity of the wines, or the amount of acetic acid in the wine. If the amount is too high, the wine will have a vinegar taste.^1^
+
+Outliers are shown in green. However, because higher levels of volatile acids are associated with a negative consumer experience, the outliers will not be removed as they affect the quality rating. Also, the range of volatile acidity concentration is very small, so the data points may not actually be outliers.
+
+Summary of volatile acidity data:
+
+```{r, echo = FALSE}
+summary(df$volatile.acidity)
+```
+
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = citric.acid), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = citric.acid), data = df) +
+  geom_histogram(binwidth = 0.01), ncol = 2)
+```
+
+###Plot 3.4
+The amount of citric acid in the wines. Adds a freshness to the flavor.^1^ Because the range of concentrations of citric acid are so small, the outliers will not be removed.
+
+Summary of citric acid data:
+
+```{r, echo = FALSE}
+summary(df$citric.acid)
+```
+
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = chlorides), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = chlorides), data = df) +
+  geom_histogram(binwidth = 0.01), ncol = 2)
+```
+
+###Plot 3.5
+The amount of chlorides, or salt, in the wines. Because the concentration of chlorides is so small, the outliers will not be removed.
+
+Summary choloride data:
+
+```{r, echo = FALSE}
+summary(df$chlorides)
+```
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = free.sulfur.dioxide), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = free.sulfur.dioxide), data = df) +
+  geom_histogram(binwidth = 1), ncol = 2)
+```
+
+###Plot 3.6
+The amount of free sulfur dioxide in the wines. This prevents microbial growth and oxidation.^1^ The plot on the left shows that there are outliers. However, because there is also data for total sulfur dioxide concentration, the outliers for free sulfur dioxide will not be removed.
+
+Summary free sulfur dioxide:
+
+```{r, echo = FALSE}
+summary(df$free.sulfur.dioxide)
+```
+
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = total.sulfur.dioxide), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = total.sulfur.dioxide), data = df) +
+  geom_histogram(binwidth = 1), ncol = 2)
+```
+
+###Plot 3.7
+Total amount of sulfur dioxide in the wines. Outliers are blue. 
+
+Statistics for sulfur dioxde:
+
+```{r, echo = FALSE}
+summary(df$total.sulfur.dioxide)
+```
+
+
+```{r, echo = FALSE}
+df$total.sulfur.dioxide <- removeOutliers(df$total.sulfur.dioxide)
+```
+
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = total.sulfur.dioxide), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = total.sulfur.dioxide), data = df) +
+  geom_histogram(binwidth = 1), ncol = 2)
+```
+
+###Plot 3.8 
+Total sulfur dioxide concentrations with outliers removed.
+
+Summary of total sulfur dioxide data after removal of outliers:
+
+```{r, echo = FALSE}
+summary(df$total.sulfur.dioxide)
+```
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = density), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = density), data = df) +
+  geom_histogram(binwidth = .005), ncol = 2)
+```
+
+###Plot 3.9
+Density across all of the wines. Because the range of density values is so small, the outliers will not be removed. 
+
+Summary of density data:
+
+```{r, echo = FALSE}
+summary(df$density)
+```
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = sulphates), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = sulphates), data = df) +
+  geom_histogram(binwidth = .05), ncol = 2)
+```
+
+###Plot 3.10
+Amount of sulphates in the wines, which are antimicrobials and antioxidants.
+
+Statistics for the sulphate data:
+
+```{r, echo = FALSE}
+summary(df$sulphates)
+```
+
+
+```{r, echo = FALSE}
+df$sulphates <- removeOutliers(df$sulphates)
+```
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = sulphates), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = sulphates), data = df) +
+  geom_histogram(binwidth = 0.1), ncol = 2)
+```
+
+###Plot 3.11
+Sulphates concentration with outliers removed.
+
+Summary of sulphates data after removal of outliers:
+
+```{r, echo = FALSE}
+summary(df$sulphates)
+```
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = pH), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = pH), data = df) +
+  geom_histogram(binwidth = 0.1), ncol = 2)
+```
+
+###Plot 3.12
+The pH of the wines. The outliers will not be removed because the range of values is small and the values in blue may not actually be outliers.
+
+Summary of pH data:
+
+```{r, echo = FALSE}
+summary(df$pH)
+```
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = residual.sugar), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = residual.sugar), data = df) +
+  geom_histogram(binwidth = 1), ncol = 2)
+```
+
+###Plot 3.13
+Amount of residual sugar in the wines. The outliers are shown in blue on the left. 
+
+Statistics for the residual sugar data:
+
+```{r, echo = FALSE}
+summary(df$residual.sugar)
+```
+
+
+```{r, echo = FALSE}
+df$residual.sugar <- removeOutliers(df$residual.sugar)
+```
+
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = residual.sugar), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = residual.sugar), data = df) +
+  geom_histogram(binwidth = 1), ncol = 2)
+```
+
+###Plot 3.14
+Residual sugar concentration with outliers removed.
+
+Summary of residual sugar data after the removal of outliers:
+
+```{r, echo = FALSE}
+summary(df$residual.sugar)
+```
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = alcohol), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = alcohol), data = df) +
+  geom_histogram(binwidth = 1), ncol = 2)
+```
+
+###Plot 3.15
+Amount of alcohol in the wines.
+
+Statistics for the alcohol data:
+
+```{r, echo = FALSE}
+summary(df$alcohol)
+```
+
+
+```{r, echo = FALSE}
+df$alcohol <- removeOutliers(df$alcohol)
+```
+
+```{r, echo = FALSE}
+grid.arrange(ggplot(aes(x = 1, y = alcohol), data = df) + 
+  geom_boxplot(color = 'green', outlier.color = 'blue') +   
+    geom_jitter(alpha = 1/20),
+  
+ggplot(aes(x = alcohol), data = df) +
+  geom_histogram(binwidth = 1), ncol = 2)
+```
+
+###Plot 3.16
+Plot of alcohol concentrations with outliers removed.
+
+Summary alcohol data after outlier removal:
+
+```{r, echo = FALSE}
+summary(df$alcohol)
+```
+
+```{r, echo = FALSE}
+qplot(x = quality, data = df, binwidth = 0.5)
+```
+
+###Plot 3.17
+Wine quality, on a scale of 0 - 10.
+
+Summary of quality data:
+
+```{r, echo = FALSE}
+summary(df$quality)
+```
+
+
+#4. Univariate Analysis
+
+A quick look at the data shows that the dataset is 1599 rows with 13 columns. One column is the wine ID number and one column is the wine quality. The other 11 columns are attributes that contribute to the quality of wine.
+
+The plots show the number of wines that contain an amount of each compound, except for the last plot, which shows the number of wines with each quality score. Most of the wines in the dataset have scores of 5, 6, or 7. The following analysis will explore what attributes contribute most to the quality of the wines.
+
+Of interest are the variables fixed.acidity, residual.sugar, total.sulfur.dioxide, sulphates, and alcohol. The outliers for these attributes have been removed.
+
+
+#5. Bivariate Plots Section
+
+Plots in this section explore the relationships between two of the wine attributes listed in the paper by P. Cortez, et. al.^1^. The purpose was to gather enough information about the attributes to be able to begin to draw some conclusions about the role of each in wine preference.
+
+```{r, echo = FALSE}
+
+ggplot(aes(factor(quality), 
+            alcohol), 
+        data = df) +
+  geom_jitter( alpha = .3)  +
+  geom_boxplot( alpha = .5,color = 'blue')+
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+
+```
+
+###Plot 5.1
+This plot shows the relationshop between alcohol and quality. Generally, the quality increases as the concentration of alchol increases. There is a medium positive correlation between the two.
+
+```{r, echo = FALSE}
+cor.test(df$quality, df$alcohol)
+```
+
+
+```{r, echo = FALSE}
+ggplot(aes(factor(quality), 
+            sulphates), 
+        data = df) +
+  geom_jitter( alpha = .3)  +
+  geom_boxplot( alpha = .5,color = 'blue')+
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+
+```
+
+###Plot 5.2
+The plot shows the relationship between qUality and sulphates. There is a medium positive correlation between the two.
+
+```{r, echo = FALSE}
+cor.test(df$quality, df$sulphates)
+```
+
+```{r, echo = FALSE}
+ggplot(aes(factor(quality), 
+            total.sulfur.dioxide), 
+        data = df) +
+  geom_jitter( alpha = .3)  +
+  geom_boxplot( alpha = .5,color = 'blue')+
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+```
+
+###Plot 5.3
+This plot shows the relationship of total.sulfur.dioxide to quality. Total sulfur dioxide increases until quality score of 5 and then decreases. There is a weak negative correlation between total sulfur dioxide and quality.
+
+
+```{r, echo = FALSE}
+cor.test(df$quality, df$total.sulfur.dioxide)
+```
+
+```{r, echo = FALSE}
+ggplot(aes(factor(quality), 
+            residual.sugar), 
+        data = df) +
+  geom_jitter( alpha = .3)  +
+  geom_boxplot( alpha = .5,color = 'blue')+
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+```
+
+###Plot 5.4
+This plot shows the relationship between quality and residual sugar. The mean of residual sugar is between 2 and ~ 2.25 across all quality scores. There is a very weak positive correlation between residual sugar and qaulity.
+
+```{r, echo = FALSE}
+cor.test(df$quality, df$residual.sugar)
+```
+
+```{r, echo = FALSE}
+ggplot(aes(factor(quality), 
+            fixed.acidity), 
+        data = df) +
+  geom_jitter( alpha = .3)  +
+  geom_boxplot( alpha = .5,color = 'blue')+
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+```
+
+###Plot 5.5
+This plot shows the relationship between fixed.acidity and quality. There is a weak positive correlation between the two.
+
+```{r, echo = FALSE}
+cor.test(df$quality, df$fixed.acidity)
+```
+```{r, echo = FALSE}
+#Create correlation matrix
+cormat <- round(cor(df),4)
+```
+
+```{r, echo = FALSE}
+#Use melt to rearrange the data so it can be plotted.
+library(reshape2)
+melted_cormat <- melt(cormat)
+
+```
+
+```{r, echo = FALSE}
+matrix <- ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()
+```
+
+
+
+
+```{r, echo=FALSE,results='hide',fig.keep='all'}
+
+
+#The square matrix has duplicate data - the upper and lower triangles are mirrors of each other
+get_upper_tri <- function(cormat){
+    cormat[lower.tri(cormat)]<- NA
+    return(cormat)
+}
+
+#Grab the upper triangle
+upper_tri <- get_upper_tri(cormat)
+upper_tri
+
+#Melt correlation data and remove NA values
+melted_cormat <- melt(upper_tri, na.rm = TRUE)
+
+ggplot(data = melted_cormat, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+  theme_minimal()+ 
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+ coord_fixed()
+```
+
+### Plot 5.6
+This plot shows the correlations between all of the attributes in the data. The red correlations are positive and the blue ones are negative.
+
+
+#6. Bivariate Analysis
+
+In order to answer the question of what makes a quality vinho verde red wine, fixed.acidity, residual.sugar, total.sulfur.dioxide, sulphates, and alcohol were each plotted against quality. The plots were all the same style in order to more easily compare the relationship of each attribute with quality to each other. Lastly, a plot showing the correlations of all of the attributes to each other shows that there are no strong correlations across the attributes (and quality) in this data set.
+
+
+#7. Multivariate Plots Section
+
+```{r, echo=FALSE,results='hide',fig.keep='all'}
+library(RColorBrewer)
+
+ggplot(aes(x = alcohol, y = sulphates, color = factor(quality)), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  geom_smooth(method = "lm", se = FALSE)
+  scale_color_brewer(type = 'seq')
+  
+```
+
+```{r, echo = FALSE}
+cor.test(df$alcohol, df$sulphates)
+```
+
+###Plot 7.1
+This plot shows the relationship of alcohol to sulphates. The trend lines show the quality scores across this data. Although alcohol and sulphates both have a medium correlation with quality, there is only a weak positive correlation between the two. This plot also shows that wines with quality scores of 4 and 5 have a positive trend in both alcohol and sulphates. The other scores are fairly constant across the wines or negative with increasing quality.
+
+
+```{r, echo=FALSE,results='hide',fig.keep='all'}
+ggplot(aes(x = alcohol, y = citric.acid, color = factor(quality)), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  geom_smooth(method = "lm", se = FALSE)
+  scale_color_brewer(type = 'seq')
+    
+```
+
+```{r, echo = FALSE}
+cor.test(df$alcohol, df$citric.acid)
+```
+
+
+###Plot 7.2
+This plot shows the relationship between alcohol and citric acid, overlayed by quality across all wines. The plot shows that this relationship has a decreased affect on quality in the lower and upper quality wines, but has very little effect on quality in the mid-range of the scores. Because the pH of ethanol is slightly basic, it is logical that acidity decreases and concentration of alcohol increases. There is a weak positive correlation between the two.
+
+```{r, echo=FALSE,results='hide',fig.keep='all'}
+ggplot(aes(x = alcohol, y = pH, color = factor(quality)), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  geom_smooth(method = "lm", se = FALSE)
+  scale_color_brewer(type = 'seq')
+```
+
+```{r, echo = FALSE}
+cor.test(df$alcohol, df$pH)
+
+```
+
+
+###Plot 7.3
+This plot shows the relationshop between alcohol and pH and is overlayed by quality. Here, quality increases with the increase in alcohol and the increase in pH. Because the pH of ethanol is slightly basic, it is logical that pH increases as the percentage of alcohol increases and that the quality increases with an increase in pH, as alcohol has a positive correlation with quality. There is a weak positive correlation between alcohol and pH.
+
+```{r, echo=FALSE,results='hide',fig.keep='all'}
+ggplot(aes(x = alcohol, y = density, color = factor(quality)), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  geom_smooth(method = "lm", se = FALSE)
+  scale_color_brewer(type = 'seq')
+```
+
+```{r, echo =FALSE}
+cor.test(df$alcohol, df$density)
+```
+
+
+###Plot 7.4
+This plot shows the relationship between alcohol and density overlayed with quality. Here, there is a negative correlation between alcohol and density. Also, quality decreases over these wines. The density of wine is near 1, which is the density of water. The density of ethanol is 0.79. As the amount of alcohol increases, the density decreases, as does the quality with denisity. There is a medium negative correlation between alcohol concentraion and density.
+
+```{r, echo=FALSE,results='hide',fig.keep='all'}
+ggplot(aes(x = alcohol, y = total.sulfur.dioxide, color = factor(quality)), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  geom_smooth(method = "lm", se = FALSE)
+  scale_color_brewer(type = 'seq')
+```
+
+```{r, echo = FALSE}
+cor.test(df$alcohol, df$total.sulfur.dioxide)
+```
+
+
+###Plot 7.5
+This plot shows the relationship of alcohol to total sulfur dioxide with an overlay of quality. Generally, there is a decrease in sulfur dioxide and quality as alcohol increases. Because sulfur dioxide gas becomes sulfuric acid in water, it is logical that the amount of total sulfur dioxide would decrease as the amount of alcohol increases, making the wine more basic. There is a weak negative correlation between the two.
+
+
+###Plot 7.6
+Below is the linear model for the comparison of all of the attributes and the effects they have on quality. It is not a traditonal plot, but it provides information to support the previously plotted data.
+
+```{r, echo = FALSE}
+model <- lm(formula = quality ~ alcohol + fixed.acidity + volatile.acidity + 
+              citric.acid + residual.sugar + chlorides + free.sulfur.dioxide +
+              total.sulfur.dioxide + density + pH + sulphates, data = df)
+summary(model)
+```
+
+###Plot 7.7
+Model coefficients.
+
+```{r, echo = FALSE}
+summary(model)$coefficient
+```
+
+###Plot 7.8
+Confidence intervals.
+
+```{r, echo = FALSE}
+confint(model)
+```
+
+#8. Multivariate Analysis
+
+The multivariate plots show the relationships of the attributes to quality. They also show how each attribute behaves across the spectrum of taste preference. Quality is not correlated to any one attribute strongly. Neither are any attributes strongly correlated with each other. There are some medium and weak correlations. 
+
+Of interest is how the attributes behave in the presence of alcohol. Because the density of alcohol is less than the density of water and the pH of the alcohol is greater than the pH of water, acidity decreases and pH increases as the concentration of alcohol increases.
+
+A regression analysis indicates that the attribute with the lowest impact on the quality of wines is volatile acidity. All of the other attributes are more significant. However, it is important to note that pH and density will change as the concentration of alcohol changes.
+
+#9. Final Plots and Summary
+
+The preceding analysis has provided some insight into consumer preference regarding Vinho Verde Red Wines, the most remarkable being that no one attribute of the wines has a strong effect on perceived quality. Below are some findings of interest. 
+
+
+```{r, echo = FALSE}
+
+ggplot(aes(factor(quality), 
+            alcohol), 
+        data = df) +
+  geom_jitter( alpha = .3)  +
+  geom_boxplot( alpha = .5,color = 'blue')+
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4) +
+  labs(title="Effect of Alcohol on Quality in Vinho Verde Red Wines", 
+       x="Quality Score", y="%Alcohol")
+
+```
+
+###Plot 9.1
+Alcohol has the strongest correlation with quality of any of the attributes. The above plot shows the relationship between alcohol concentration and quality score. Most of the wines fall into the 5 and 6 quality category. Generally, quality score increases with alcohol concentration increase.
+
+
+```{r, echo = FALSE}
+ggplot(aes(factor(quality), 
+            sulphates), 
+        data = df) +
+  geom_jitter( alpha = .3)  +
+  geom_boxplot( alpha = .5,color = 'blue')+
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4) +
+  labs(title="Effect of Sulphates on Quality in Vinho Verde Red Wines", 
+       x="Quality Score", y="%Sulphates")
+```
+
+###Plot 9.2 
+Sulphate concentration has one of the strongest correlations with quality of any of the attributes. The above plot shows the relationship between sulphate concentration and quality score. Most of the wines fall into the 5 and 6 quality category. Generally, quality score increases with sulphate concentration increase.
+
+
+```{r, echo = FALSE}
+ggplot(aes(x = alcohol, y = sulphates, color = factor(quality)), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Effect of the Relationship Between Alcohol and Sulphates on 
+       Quality in Vinho Verde Red Wines") +
+  xlab('Alcohol (%)') + ylab('Sulphates (%)') +
+   scale_color_brewer(type = 'seq')
+    
+```
+
+###Plot 9.3 
+The above plot shows how alcohol and sulphates combine to affect quality. The highest quality of the wines contains the highest concentrations of both alcohol and sulphates.
+
+###Summary
+The analysis of how wine attributes relate to consumer preference, or quality, shows that none of the attributes in the data set are strongly correlatetd with quality. The linear model constructed in 7.5 confirms this. All of the attributes are significant in their relationships to quality. 
+
+While some of the attributes decrease with increase in quality score and some increase with increase in quality score, they all contribute to the taste of the wine. Therefore, the conclusion is the it is the mixture of all of the attributes that affect consumer preferences for wine.
+
+#11. Reflection
+This analysis shows how certain attributes of vinho verde red wines affect consumer preference, which is summarized in a quality score. The analysis was deceptively difficult. None of the attributes had a strong correlation with quality score or with the other attributes. And, some of the attributes are influenced by other attributes; i.e. pH and density, which are affected by alcohol concentration. 
+
+Because quality is a discrete data attribute, it was difficult to compare quality to the other attributes, as they are continuous and the range of values of the attributes do not fit cleanly within the quality score ranges. The linear model confirms this by showing that all of the attributes are significant when determining wine quality. Additionally, quality is subjective and dependent on individual persons.
+
+Future analysis might include the consumer preferences of the wines over time. How do the attributes of the wine change with age in the barrel and after purchase? Might there be other attributes that add to quality of the wine? What is the optimal age for these wines? When does the taste begin to decline? It may also be valuable to compare red wine quality to white wine quality.
+
+#12. Notes
+
+1. P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. 
+  Modeling wine preferences by data mining from physicochemical properties.
+  In Decision Support Systems, Elsevier, 47(4):547-553. ISSN: 0167-9236.
+
+#13. References used
+jdatalab.com
+
+dummies.com for correlation coefficient
+
+stackoverflow and RPubs for plotting 2 lines
+
+Google search for normalizing data
+
+ggplot2 Elegant Graphics for Data Analysis by Hadley Wickham
+
+Google search for densities of water and ethanol
+
+todo.science.blogspot.com
+
+stackoverflow for printing test with variables
+
+http://www.sthda.com/ for correlation matrix heatmap and multivariate linear models 
+
+stackoverflow for font size
+
+stackoverflow for suppressing warnings and output
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
